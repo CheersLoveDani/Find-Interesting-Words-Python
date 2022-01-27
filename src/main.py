@@ -1,8 +1,11 @@
 
 import os
 import time
+import re
+import random
 
 from openpyxl import load_workbook, Workbook
+from nltk import regexp_tokenize
 from os.path import exists
 
 with open('data/doc1.txt', 'r') as f:
@@ -23,9 +26,18 @@ with open('data/doc5.txt', 'r') as f:
 with open('data/doc6.txt', 'r') as f:
     doc6 = f.read()
 
-documents = [doc1, doc2, doc3, doc4, doc5, doc6]
+documents = [
+    {"filename": 'doc1.txt', "text": doc1},
+    {"filename": 'doc2.txt', "text": doc2},
+    {"filename": 'doc3.txt', "text": doc3},
+    {"filename": 'doc4.txt', "text": doc4},
+    {"filename": 'doc5.txt', "text": doc5},
+    {"filename": 'doc6.txt', "text": doc6}
+]
 
 all_docs = doc1 + ' ' + doc2 + ' ' + doc3 + ' ' + doc4 + ' ' + doc5 + ' ' + doc6
+
+sentence_splits = regexp_tokenize(all_docs, pattern=r'\.(?:\s+|$)', gaps=True)
 
 
 words = all_docs.split()
@@ -80,7 +92,57 @@ word_counts = map(wordCount, sorted_words)
 sorted_word_counts = sorted(
     word_counts, key=lambda d: d['word_count'], reverse=True)
 
-# print(sorted_word_counts)
+
+def trimWords(word):
+    if word['word_count'] > 19:
+        return True
+    else:
+        return False
+
+
+trimmed_sorted = list(filter(trimWords, sorted_word_counts))
+
+
+def wordLocations(word):
+    doc_list = []
+    for doc in documents:
+        if word['word'] in doc['text']:
+            doc_list.append(doc['filename'])
+    return {
+        "word": word['word'],
+        "word_count": word['word_count'],
+        "featured": ', '.join(doc_list)
+    }
+
+
+word_locations = list(map(wordLocations, trimmed_sorted))
+
+
+def wordExample(word):
+    sent_list = []
+    final_list = []
+    for sent in sentence_splits:
+        if word['word'] in sent:
+            sent_list.append(sent)
+
+    for i in range(3):
+        rand_item = random.choice(sent_list)
+        final_list.append(rand_item)
+        sent_list.remove(rand_item)
+    return {
+        "word": word['word'],
+        "word_count": word['word_count'],
+        "featured": word['featured'],
+        "examples": ' \n \n '.join(final_list)
+    }
+
+
+word_examples = list(map(wordExample, word_locations))
+print(word_examples[0]['examples'])
+
+final_data = word_examples
+# ? Overwrite and Save data sheet
+
 
 print('Checking if DataSheet exists... ' +
       str(exists('./data/DataSheet.xlsx')))
@@ -96,11 +158,13 @@ sheet = workbook['Sheet']
 sheet['A1'] = 'Word'
 sheet['B1'] = 'Count'
 sheet['C1'] = 'Appears in'
-sheet['D1'] = 'testing'
+sheet['D1'] = 'Example'
 
-for i in sorted_word_counts:
-    sheet['A' + str(sorted_word_counts.index(i) + 2)] = i['word']
-    sheet['B' + str(sorted_word_counts.index(i) + 2)] = i['word_count']
+for i in final_data:
+    sheet['A' + str(final_data.index(i) + 2)] = i['word']
+    sheet['B' + str(final_data.index(i) + 2)] = i['word_count']
+    sheet['C' + str(final_data.index(i) + 2)] = i['featured']
+    sheet['D' + str(final_data.index(i) + 2)] = i['examples']
 
 print('Appended data...')
 
