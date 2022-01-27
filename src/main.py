@@ -5,7 +5,7 @@ import re
 import random
 
 from openpyxl import load_workbook, Workbook
-from nltk import regexp_tokenize
+from nltk import regexp_tokenize, word_tokenize
 from os.path import exists
 
 with open('data/doc1.txt', 'r') as f:
@@ -48,9 +48,9 @@ def removePunc(word):
     new_string = word
     for char in disallowed_chars:
         new_string = new_string.replace(char, '')
-    return new_string
 
-    # Accomplished&#8221;
+    new_string += ' '
+    return new_string
 
 
 # ? Interesting words in this case are long words without special characters
@@ -82,7 +82,7 @@ sorted_words = sorted(unique_list)
 def wordCount(word):
     count = 0
     for i in words_filtered:
-        if word in i:
+        if (word) in i:
             count += 1
     return {"word": word, "word_count": count}
 
@@ -106,7 +106,7 @@ trimmed_sorted = list(filter(trimWords, sorted_word_counts))
 def wordLocations(word):
     doc_list = []
     for doc in documents:
-        if word['word'] in doc['text']:
+        if (word['word']) in doc['text']:
             doc_list.append(doc['filename'])
     return {
         "word": word['word'],
@@ -122,23 +122,22 @@ def wordExample(word):
     sent_list = []
     final_list = []
     for sent in sentence_splits:
-        if word['word'] in sent:
+        if (word['word']) in sent:
             sent_list.append(sent)
 
     for i in range(3):
         rand_item = random.choice(sent_list)
-        final_list.append(rand_item)
+        final_list.append(rand_item + '.')
         sent_list.remove(rand_item)
     return {
         "word": word['word'],
         "word_count": word['word_count'],
         "featured": word['featured'],
-        "examples": ' \n \n '.join(final_list)
+        "examples": ' \n\n'.join(final_list)
     }
 
 
 word_examples = list(map(wordExample, word_locations))
-print(word_examples[0]['examples'])
 
 final_data = word_examples
 # ? Overwrite and Save data sheet
@@ -158,10 +157,10 @@ sheet = workbook['Sheet']
 sheet['A1'] = 'Word'
 sheet['B1'] = 'Count'
 sheet['C1'] = 'Appears in'
-sheet['D1'] = 'Example'
+sheet['D1'] = 'Examples'
 
 for i in final_data:
-    sheet['A' + str(final_data.index(i) + 2)] = i['word']
+    sheet['A' + str(final_data.index(i) + 2)] = i['word'].capitalize()
     sheet['B' + str(final_data.index(i) + 2)] = i['word_count']
     sheet['C' + str(final_data.index(i) + 2)] = i['featured']
     sheet['D' + str(final_data.index(i) + 2)] = i['examples']
@@ -172,7 +171,7 @@ print('Appended data...')
 if(exists('./data/DataSheet.xlsx')):
     print('Removing file...')
     os.remove('./data/DataSheet.xlsx')
-    time.sleep(0.5)
+    time.sleep(2)
     print('Removed file')
 
 workbook.save(filename='./data/DataSheet.xlsx')
